@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- Design tokens: dark (default) ---- */
+:root {
+  --base: 8 11 15;            /* #080B0F  near-black canvas */
+  --surface: 17 22 28;        /* #11161C  card surface */
+  --surface-raised: 24 30 38; /* #181E26  raised card / inputs */
+  --border: 32 40 49;         /* #202831  hairline borders */
+  --ink: 233 238 242;         /* #E9EEF2  primary text */
+  --ink-muted: 141 152 163;   /* #8D98A3  secondary text */
+  --accent: 163 230 53;       /* #A3E635  lime accent */
+  --accent-soft: 45 56 20;    /* soft accent bg tint */
+  --warn: 245 166 35;         /* #F5A623 amber (trial banner) */
+  --danger: 224 82 82;        /* #E05252 */
+}
+
+/* ---- Design tokens: light ---- */
+.light {
+  --base: 246 247 249;        /* #F6F7F9 */
+  --surface: 255 255 255;     /* #FFFFFF */
+  --surface-raised: 249 250 252;
+  --border: 226 230 235;      /* #E2E6EB */
+  --ink: 20 24 29;            /* #14181D */
+  --ink-muted: 107 116 128;   /* #6B7480 */
+  --accent: 101 163 13;       /* #65A30D deeper lime for contrast on white */
+  --accent-soft: 236 244 217;
+  --warn: 194 120 3;
+  --danger: 200 50 50;
+}
+
+body {
+  background-color: rgb(var(--base));
+  color: rgb(var(--ink));
+}
+
+::selection {
+  background: rgb(var(--accent) / 0.3);
+}
+
+/* Visible keyboard focus everywhere, respecting the accent */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
+
+@layer components {
+  .page {
+    @apply max-w-6xl mx-auto;
+  }
+  .input {
+    @apply w-full rounded-lg bg-surface-raised border border-border px-3 py-2 text-sm
+           text-ink placeholder:text-ink-muted/60 outline-none
+           focus:border-accent focus:ring-1 focus:ring-accent transition;
+  }
+  .card {
+    @apply rounded-2xl border border-border bg-surface p-6;
+  }
+}
+
+/* Receipt printing — isolates .receipt-print content, hides the rest of the app */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-print,
+  .receipt-print * {
+    visibility: visible;
+  }
+  .receipt-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
