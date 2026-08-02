@@ -12,6 +12,8 @@
     "fs:allow-write-text-file",
     "fs:allow-exists",
     "fs:allow-mkdir",
+    "fs:allow-read-dir",
+    "fs:allow-remove",
     {
       "identifier": "fs:scope",
       "allow": [
@@ -21,6 +23,13 @@
         { "path": "$DESKTOP/**" },
         { "path": "$PICTURE/**" },
         { "path": "$HOME/**" }
+      ]
+    },
+    {
+      "identifier": "shell:allow-open",
+      "allow": [
+        { "url": "whatsapp://*" },
+        { "url": "https://wa.me/*" }
       ]
     }
   ]

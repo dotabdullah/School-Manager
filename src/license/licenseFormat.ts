@@ -2,7 +2,7 @@
 // e.g. SCH-4F8A2B-91C3D0-.... Contains no secrets — safe to import from either build.
 
 /** Modules a license can individually enable/disable. Dashboard, Licensing, and Backup are always on. */
-export const FEATURE_KEYS = ["students", "teachers", "classes", "fees", "expenses", "finance", "attendance", "payroll"] as const;
+export const FEATURE_KEYS = ["students", "teachers", "classes", "fees", "expenses", "finance", "attendance", "payroll", "exams"] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
@@ -14,6 +14,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   finance: "Finance Reports",
   attendance: "Attendance",
   payroll: "Payroll & Salaries",
+  exams: "Exams & Results",
 };
 
 /** How many physical PCs a license authorizes. "unlimited" skips hardware-lock verification entirely. */

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { Wallet, TrendingDown, Receipt, Scale, Download, Users2, AlertCircle } from "lucide-react";
-import { getStore, Salary, Student } from "../db/db";
+import { Wallet, TrendingDown, Receipt, Scale, Download, Users2, AlertCircle, MessageCircle } from "lucide-react";
+import { getStore, getSchoolProfile, Salary, Student, SchoolProfile } from "../db/db";
 import { exportToCsv } from "../lib/importExport";
+import WhatsAppReminderModal from "../components/WhatsAppReminderModal";
 
 function monthKey(dateStr: string) {
   return dateStr.slice(0, 7); // "YYYY-MM"
@@ -51,10 +52,13 @@ export default function Finance() {
   const [classReport, setClassReport] = useState<ClassReportRow[]>([]);
   const [salaryRows, setSalaryRows] = useState<SalaryRow[]>([]);
   const [feeDefaulters, setFeeDefaulters] = useState<{ student: Student; owed: number }[]>([]);
+  const [school, setSchool] = useState<SchoolProfile>({ name: "", address: "", phone: "", feeReminderTemplate: "" });
+  const [reminderFor, setReminderFor] = useState<{ student: Student; owed: number } | null>(null);
 
   useEffect(() => {
     (async () => {
       const store = await getStore();
+      setSchool(await getSchoolProfile());
       const thisMonthKey = monthKey(new Date().toISOString());
 
       const collected = store.fees
@@ -142,8 +146,13 @@ export default function Finance() {
           <p className="text-xs text-ink-muted">Students who haven't paid this month's tuition/monthly fee yet.</p>
           <div className="flex flex-wrap gap-2">
             {feeDefaulters.map(({ student, owed }) => (
-              <span key={student.id} className="text-xs rounded-full bg-danger/15 text-danger px-3 py-1.5">
+              <span key={student.id} className="inline-flex items-center gap-1.5 text-xs rounded-full bg-danger/15 text-danger px-3 py-1.5">
                 {student.full_name} ({student.class}) — Rs. {owed.toLocaleString()} due
+                {student.parent_phone && (
+                  <button onClick={() => setReminderFor({ student, owed })} title="Send WhatsApp Reminder" className="hover:opacity-70">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </span>
             ))}
           </div>
@@ -242,6 +251,18 @@ export default function Finance() {
         </table>
         </div>
       </div>
+
+      {reminderFor && (
+        <WhatsAppReminderModal
+          studentName={reminderFor.student.full_name}
+          parentPhone={reminderFor.student.parent_phone}
+          amount={reminderFor.owed}
+          month={monthLabelLong(currentMonthKey())}
+          schoolName={school.name}
+          template={school.feeReminderTemplate}
+          onClose={() => setReminderFor(null)}
+        />
+      )}
     </div>
   );
 }

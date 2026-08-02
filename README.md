@@ -129,12 +129,36 @@ GUI: `node scripts/generate-license.mjs "School Name" SCH-HW-XXXXXX 2027-07-24`
   Attendance, and the Dashboard charts).
 - **Students / Teachers / Fees / Attendance modules** (`src/pages/`) — CRUD +
   CSV/Excel import/export. Copy the Students.tsx pattern for any new module.
+- **WhatsApp Fee Reminders** (`src/lib/whatsapp.ts`, `src/components/WhatsAppReminderModal.tsx`)
+  — a "Send Reminder" button on Fee Ledger's unpaid/partial rows and on
+  Finance's Fee Defaulters tracker composes a message (editable template in
+  Settings → School Profile) and offers **WhatsApp Desktop** (via the
+  `whatsapp://` OS protocol handler, using `tauri-plugin-shell`) or
+  **WhatsApp Web** (opens `wa.me` in the default browser), plus Copy
+  Message/Copy Number as a manual fallback. Phone numbers are normalized from
+  common local formats (`0300-1234567`, `+92...`) to the international format
+  WhatsApp links require, defaulting to Pakistan's country code.
+  > Note: I couldn't test the actual `whatsapp://` launch against a real
+  > Windows + WhatsApp Desktop install in my build environment. If it doesn't
+  > open on your machine, the Copy Message/Copy Number buttons still work as
+  > a manual fallback — see `src-tauri/capabilities/default.json`'s
+  > `shell:allow-open` scope if it needs adjusting.
 - **ID Cards** (`src/components/IDCardModal.tsx`) — printable student/teacher
   ID cards with 4 built-in designs (Classic Banner, Vertical Portrait, Minimal
   Stripe, Bold Diagonal), switchable at print time. Upload a photo on any
   Student or Teacher (`src/lib/photo.ts`) — stored as a base64 data URL
   directly in that record (included in JSON backups automatically). No photo
   uploaded → the card falls back to a placeholder avatar instead of breaking.
+- **Exams & Results** (`src/pages/Exams.tsx`, `src/components/ReportCardModal.tsx`)
+  — create an exam scoped to one class (name, date, subjects picked from the
+  same managed Subjects list Teachers uses, each with its own Max/Pass marks),
+  enter every student's marks in a spreadsheet-style grid, and print a report
+  card per student. Totals, percentage, grade, and pass/fail are **computed on
+  the fly** from `getGrade()`/`summarizeExamResult()` in `src/db/db.ts` —
+  never stored, so they can never drift out of sync with the raw marks. A
+  student must pass every subject's individual pass-marks to pass overall.
+  Default grade scale: A+ 90+, A 80+, B 70+, C 60+, D 50+, E 33+, F below —
+  edit `GRADE_BANDS` in `db.ts` if your school uses a different scale.
 - **Payroll & Teacher Salaries** (`src/pages/Payroll.tsx`) — base salary per
   teacher, monthly processing with deduction auto-suggested from Attendance's
   Teacher mode (absent/leave days), and printable payslips. Marking a salary
@@ -157,6 +181,15 @@ GUI: `node scripts/generate-license.mjs "School Name" SCH-HW-XXXXXX 2027-07-24`
   - **Full Backup (JSON)** — one restorable file with every table's data.
   - **Restore From Backup** — replaces all data after confirmation.
   - **Export All as CSV** — one .csv per table, for opening in Excel.
+  - **Automatic Backups** (`src/lib/autoBackup.ts`) — a dated backup
+    (`backup-YYYY-MM-DD.json`) is created silently the first time the app
+    opens each day, stored in `<app-local-data>/backups/`. Only the most
+    recent N are kept (default 10, editable in Settings) — older ones are
+    deleted automatically. Deliberately **decoupled from the main data
+    store** (retention count lives in its own `backups/config.json`, not in
+    `school-data.json`) so backups keep working even if the main store ever
+    gets corrupted — that's the whole point of a backup system. Restore or
+    delete any individual day's backup from Settings.
 - **Trial + license gate** (`src/App.tsx`) — 7-day trial banner, then locks
   down to the activation screen until a valid key is entered.
 - **Light/dark theme toggle** (`src/theme/ThemeProvider.tsx`) — persisted

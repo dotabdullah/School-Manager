@@ -55,7 +55,7 @@ const emptyForm = {
 export default function Payroll() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [salaries, setSalaries] = useState<SalaryRow[]>([]);
-  const [school, setSchool] = useState<SchoolProfile>({ name: "", address: "", phone: "" });
+  const [school, setSchool] = useState<SchoolProfile>({ name: "", address: "", phone: "", feeReminderTemplate: "" });
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [baseSalaryEdits, setBaseSalaryEdits] = useState<Record<number, string>>({});

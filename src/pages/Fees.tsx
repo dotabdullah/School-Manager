@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, Plus, Trash2, Wallet, Printer, Settings2, Pencil, X, Search, HandCoins, CalendarPlus } from "lucide-react";
+import { Download, Plus, Trash2, Wallet, Printer, Settings2, Pencil, X, Search, HandCoins, CalendarPlus, MessageCircle } from "lucide-react";
 import {
   getAll,
   insertRow,
@@ -15,12 +15,14 @@ import {
 } from "../db/db";
 import { exportToCsv } from "../lib/importExport";
 import ReceiptModal, { ReceiptData } from "../components/ReceiptModal";
+import WhatsAppReminderModal from "../components/WhatsAppReminderModal";
 
 interface FeeRow {
   id: number;
   student_id: number;
   full_name: string;
   student_class: string;
+  parent_phone: string;
   fee_head: string;
   month: string;
   amount: number;
@@ -60,7 +62,7 @@ export default function Fees() {
   const [fees, setFees] = useState<FeeRow[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [feeHeads, setFeeHeads] = useState<FeeHead[]>([]);
-  const [school, setSchool] = useState<SchoolProfile>({ name: "", address: "", phone: "" });
+  const [school, setSchool] = useState<SchoolProfile>({ name: "", address: "", phone: "", feeReminderTemplate: "" });
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showHeadManager, setShowHeadManager] = useState(false);
@@ -69,6 +71,7 @@ export default function Fees() {
   const [newHeadMonthly, setNewHeadMonthly] = useState(true);
   const [newHeadUseStudentFee, setNewHeadUseStudentFee] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [reminderFor, setReminderFor] = useState<FeeRow | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [payFor, setPayFor] = useState<FeeRow | null>(null);
@@ -89,6 +92,7 @@ export default function Fees() {
         ...f,
         full_name: studentById.get(f.student_id)?.full_name ?? "(unknown student)",
         student_class: studentById.get(f.student_id)?.class ?? "",
+        parent_phone: studentById.get(f.student_id)?.parent_phone ?? "",
       }));
     setFees(joined as FeeRow[]);
 
@@ -424,6 +428,11 @@ export default function Fees() {
                         <HandCoins className="w-4 h-4" />
                       </button>
                     )}
+                    {f.status !== "paid" && f.parent_phone && (
+                      <button onClick={() => setReminderFor(f)} className="text-ink-muted hover:text-accent" title="Send WhatsApp Reminder">
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
+                    )}
                     <button onClick={() => openReceipt(f)} className="text-ink-muted hover:text-accent" title="Print Receipt">
                       <Printer className="w-4 h-4" />
                     </button>
@@ -450,6 +459,18 @@ export default function Fees() {
       </div>
 
       {receipt && <ReceiptModal data={receipt} school={school} onClose={() => setReceipt(null)} />}
+
+      {reminderFor && (
+        <WhatsAppReminderModal
+          studentName={reminderFor.full_name}
+          parentPhone={reminderFor.parent_phone}
+          amount={Math.max(0, reminderFor.net_amount - reminderFor.paid_amount)}
+          month={reminderFor.month}
+          schoolName={school.name}
+          template={school.feeReminderTemplate}
+          onClose={() => setReminderFor(null)}
+        />
+      )}
 
       {payFor && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">

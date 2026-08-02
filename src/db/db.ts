@@ -114,10 +114,35 @@ export interface Salary {
   created_at: string;
 }
 
+export interface ExamSubjectConfig {
+  subject: string;
+  maxMarks: number;
+  passMarks: number;
+}
+
+export interface Exam {
+  id: number;
+  name: string;   // e.g. "Mid Term Exam"
+  class: string;  // exams are scoped to one class, like sections — create one row per class if shared across classes
+  date: string;
+  subjects: ExamSubjectConfig[];
+  created_at: string;
+}
+
+export interface ExamResult {
+  id: number;
+  exam_id: number;
+  student_id: number;
+  marks: Record<string, number>; // subject name -> marks obtained
+  remarks: string;
+  created_at: string;
+}
+
 export interface SchoolProfile {
   name: string;
   address: string;
   phone: string;
+  feeReminderTemplate: string; // "" = use the built-in default template
 }
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
@@ -140,6 +165,8 @@ export interface AppData {
   fee_heads: FeeHead[];
   expenses: Expense[];
   salaries: Salary[];
+  exams: Exam[];
+  exam_results: ExamResult[];
   expenseCategories: string[];
   subjectsList: string[];
   classNames: string[];
@@ -158,6 +185,8 @@ export const TABLES = [
   "fee_heads",
   "expenses",
   "salaries",
+  "exams",
+  "exam_results",
 ] as const;
 export type TableName = (typeof TABLES)[number];
 
@@ -183,11 +212,13 @@ function emptyStore(): AppData {
     ],
     expenses: [],
     salaries: [],
+    exams: [],
+    exam_results: [],
     expenseCategories: [...DEFAULT_EXPENSE_CATEGORIES],
     subjectsList: ["English", "Mathematics", "Science", "Urdu", "Islamiyat", "Social Studies", "Computer"],
     classNames: [],
     lastMonthlyFeeGeneration: null,
-    schoolProfile: { name: "", address: "", phone: "" },
+    schoolProfile: { name: "", address: "", phone: "", feeReminderTemplate: "" },
     nextIds: {
       students: 1,
       teachers: 1,
@@ -198,6 +229,8 @@ function emptyStore(): AppData {
       fee_heads: 2,
       expenses: 1,
       salaries: 1,
+      exams: 1,
+      exam_results: 1,
     },
   };
 }
@@ -218,6 +251,8 @@ async function dataFilePath(): Promise<string> {
  * simply isn't there yet.
  */
 function migrate(data: AppData): AppData {
+  data.schoolProfile = { feeReminderTemplate: "", ...(data.schoolProfile as any) };
+
   data.students = data.students.map((s: any) => ({
     roll_no: "",
     parent_phone: "",
@@ -698,4 +733,46 @@ export async function getFeeDefaultersForMonth(monthKey: string): Promise<{ stud
   }
 
   return result;
+}
+
+// --- Exam & Result helpers ---
+
+const GRADE_BANDS: { min: number; grade: string }[] = [
+  { min: 90, grade: "A+" },
+  { min: 80, grade: "A" },
+  { min: 70, grade: "B" },
+  { min: 60, grade: "C" },
+  { min: 50, grade: "D" },
+  { min: 33, grade: "E" },
+  { min: 0, grade: "F" },
+];
+
+/** Simple default percentage-to-grade scale. Adjust GRADE_BANDS above if your school uses a different one. */
+export function getGrade(percentage: number): string {
+  for (const band of GRADE_BANDS) {
+    if (percentage >= band.min) return band.grade;
+  }
+  return "F";
+}
+
+export interface ExamResultSummary {
+  obtained: number;
+  total: number;
+  percentage: number;
+  grade: string;
+  passed: boolean;
+  perSubject: { subject: string; obtained: number; max: number; passMarks: number; passed: boolean }[];
+}
+
+/** Computes totals/percentage/grade/pass-fail for one student's result on the fly — never stored, always derived. */
+export function summarizeExamResult(exam: Exam, marks: Record<string, number>): ExamResultSummary {
+  const perSubject = exam.subjects.map((s) => {
+    const obtained = marks[s.subject] ?? 0;
+    return { subject: s.subject, obtained, max: s.maxMarks, passMarks: s.passMarks, passed: obtained >= s.passMarks };
+  });
+  const obtained = perSubject.reduce((sum, s) => sum + s.obtained, 0);
+  const total = perSubject.reduce((sum, s) => sum + s.max, 0);
+  const percentage = total > 0 ? Math.round((obtained / total) * 1000) / 10 : 0;
+  const passed = perSubject.every((s) => s.passed);
+  return { obtained, total, percentage, grade: getGrade(percentage), passed, perSubject };
 }

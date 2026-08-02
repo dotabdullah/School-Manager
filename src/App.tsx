@@ -10,6 +10,7 @@ import {
   LineChart,
   ClipboardCheck,
   BadgeDollarSign,
+  Award,
   KeyRound,
   Database,
   Sun,
@@ -26,6 +27,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { FeatureKey } from "./license/licenseFormat";
 import { checkLicense, LicenseCheckResult } from "./license/license";
 import { getTrialStatus, TRIAL_LENGTH_DAYS } from "./license/trial";
+import { runAutoBackupIfNeeded } from "./lib/autoBackup";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Teachers from "./pages/Teachers";
@@ -35,10 +37,11 @@ import Expenses from "./pages/Expenses";
 import Finance from "./pages/Finance";
 import Attendance from "./pages/Attendance";
 import Payroll from "./pages/Payroll";
+import Exams from "./pages/Exams";
 import Settings from "./pages/Settings";
 import StationLicensing from "./pages/StationLicensing";
 
-type Tab = "dashboard" | "students" | "teachers" | "classes" | "fees" | "expenses" | "finance" | "attendance" | "payroll" | "licensing" | "backup";
+type Tab = "dashboard" | "students" | "teachers" | "classes" | "fees" | "expenses" | "finance" | "attendance" | "payroll" | "exams" | "licensing" | "backup";
 
 type AccessState =
   | { mode: "checking" }
@@ -56,6 +59,7 @@ const NAV_ITEMS: { tab: Tab; icon: React.ReactNode; label: string; feature?: Fea
   { tab: "finance", icon: <LineChart className="w-4 h-4" />, label: "Finance", feature: "finance" },
   { tab: "attendance", icon: <ClipboardCheck className="w-4 h-4" />, label: "Attendance", feature: "attendance" },
   { tab: "payroll", icon: <BadgeDollarSign className="w-4 h-4" />, label: "Payroll", feature: "payroll" },
+  { tab: "exams", icon: <Award className="w-4 h-4" />, label: "Exams & Results", feature: "exams" },
   { tab: "licensing", icon: <KeyRound className="w-4 h-4" />, label: "Station Licensing" },
   { tab: "backup", icon: <Database className="w-4 h-4" />, label: "Backup & Data" },
 ];
@@ -118,6 +122,7 @@ function Shell() {
 
   useEffect(() => {
     refreshAccess();
+    runAutoBackupIfNeeded().catch(() => {}); // best-effort — never block startup on this
   }, []);
 
   if (access.mode === "checking") {
@@ -155,6 +160,7 @@ function Shell() {
             {tab === "finance" && (isFeatureEnabled(access, "finance") ? <Finance /> : <FeatureLocked label="Finance" />)}
             {tab === "attendance" && (isFeatureEnabled(access, "attendance") ? <Attendance /> : <FeatureLocked label="Attendance" />)}
             {tab === "payroll" && (isFeatureEnabled(access, "payroll") ? <Payroll /> : <FeatureLocked label="Payroll" />)}
+            {tab === "exams" && (isFeatureEnabled(access, "exams") ? <Exams /> : <FeatureLocked label="Exams & Results" />)}
             {tab === "licensing" && (
               <StationLicensing
                 license={access.mode === "licensed" ? access.license : { valid: false, reason: "missing" }}
