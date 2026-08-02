@@ -1,3 +1,4 @@
+![School Manager](school_manager_banner_img.png)
 # School Manager — Offline Desktop SaaS (React + Tailwind + Tauri)
 
 Offline-first school management desktop app: a local JSON data file (no native
